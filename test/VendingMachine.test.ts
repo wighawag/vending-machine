@@ -3,7 +3,7 @@ import {ethers, deployments, getUnnamedAccounts, getNamedAccounts} from 'hardhat
 import {VendingMachine, NFT} from '../typechain';
 import {setupUser, setupUsers, User} from './utils/users';
 import {waitFor} from './utils';
-import {BigNumber} from 'ethers';
+import {BigNumber, utils} from 'ethers';
 
 const setup = deployments.createFixture(async () => {
 	await deployments.fixture('VendingMachine');
@@ -60,6 +60,10 @@ describe('VendingMachine', function () {
 
 		const balanceAfter = await ethers.provider.getBalance(seller.address);
 		expect(balanceAfter.sub(balanceBefore)).to.be.equal(price);
+
+		if ((await deployments.getNetworkName()) === 'mainnet') {
+			console.log({balanceAfter: utils.formatEther(balanceAfter)});
+		}
 	});
 
 	it('purchase fails if not enough ETH sent', async function () {
