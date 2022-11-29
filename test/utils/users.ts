@@ -3,14 +3,12 @@ import {Contract, TypedDataDomain, TypedDataField} from 'ethers';
 import {ethers} from 'hardhat';
 import {EIP712UserSigner, EIP712UserSignerFactory} from './eip712';
 
+export type User<T, S> = {address: string; signer: SignerWithAddress} & T & S;
+
 export async function setupUsers<
 	T extends {[contractName: string]: Contract},
 	S extends {[signerName: string]: EIP712UserSigner}
->(
-	addresses: string[],
-	contracts: T,
-	signers?: {[signerName: string]: EIP712UserSignerFactory}
-): Promise<({address: string; signer: SignerWithAddress} & T & S)[]> {
+>(addresses: string[], contracts: T, signers?: {[signerName: string]: EIP712UserSignerFactory}): Promise<User<T, S>[]> {
 	const users: ({address: string; signer: SignerWithAddress} & T & S)[] = [];
 	for (const address of addresses) {
 		users.push((await setupUser(address, contracts, signers)) as any);
@@ -21,11 +19,7 @@ export async function setupUsers<
 export async function setupUser<
 	T extends {[contractName: string]: Contract},
 	S extends {[signerName: string]: EIP712UserSigner}
->(
-	address: string,
-	contracts: T,
-	signers?: {[signerName: string]: EIP712UserSignerFactory}
-): Promise<{address: string; signer: SignerWithAddress} & T & S> {
+>(address: string, contracts: T, signers?: {[signerName: string]: EIP712UserSignerFactory}): Promise<User<T, S>> {
 	const signer = await ethers.getSigner(address);
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const user: any = {address, signer};

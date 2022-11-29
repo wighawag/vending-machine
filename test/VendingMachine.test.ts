@@ -1,7 +1,7 @@
 import {expect} from './chai-setup';
 import {ethers, deployments, getUnnamedAccounts, getNamedAccounts} from 'hardhat';
 import {VendingMachine, NFT} from '../typechain';
-import {setupUser, setupUsers} from './utils/users';
+import {setupUser, setupUsers, User} from './utils/users';
 import {waitFor} from './utils';
 import {BigNumber} from 'ethers';
 
@@ -24,6 +24,16 @@ const setup = deployments.createFixture(async () => {
 	};
 });
 
+async function mint(tokenID: string, to: User<any, any>) {
+	let owner;
+	try {
+		owner = await to.NFT.callStatic.ownerOf(tokenID);
+	} catch (e) {}
+	if (owner != to.address) {
+		await waitFor(to.NFT.mint(to.address, tokenID));
+	}
+}
+
 describe('VendingMachine', function () {
 	it('correct NFT contract', async function () {
 		const {NFT, linkedData} = await setup();
@@ -35,7 +45,8 @@ describe('VendingMachine', function () {
 		const {seller, buyer, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID, price} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
+
 		await waitFor(seller.NFT.approve(VendingMachine.address, tokenID));
 
 		const balanceBefore = await ethers.provider.getBalance(seller.address);
@@ -55,7 +66,7 @@ describe('VendingMachine', function () {
 		const {seller, buyer, VendingMachine, linkedData} = await setup();
 		const {tokenID, price} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(seller.NFT.approve(VendingMachine.address, tokenID));
 
 		await expect(buyer.VendingMachine.purchase({value: BigNumber.from(price).sub(1)})).to.be.revertedWith(
@@ -67,7 +78,7 @@ describe('VendingMachine', function () {
 		const {users, seller, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID, price} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(seller.NFT.approve(VendingMachine.address, tokenID));
 
 		await expect(users[0].VendingMachine.purchase({value: price})).to.be.revertedWith('NotAuthorizedBuyer');
@@ -77,7 +88,7 @@ describe('VendingMachine', function () {
 		const {seller, buyer, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID, price} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(seller.NFT.approve(VendingMachine.address, tokenID));
 
 		const balanceBefore = await ethers.provider.getBalance(seller.address);
@@ -99,7 +110,7 @@ describe('VendingMachine', function () {
 		const {tokenID, price} = linkedData;
 		const to = users[1].address;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(seller.NFT.approve(VendingMachine.address, tokenID));
 
 		const balanceBefore = await ethers.provider.getBalance(seller.address);
@@ -120,7 +131,7 @@ describe('VendingMachine', function () {
 		const {seller, buyer, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID, price} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(
 			seller.NFT['safeTransferFrom(address,address,uint256)'](seller.address, VendingMachine.address, tokenID)
 		);
@@ -139,11 +150,15 @@ describe('VendingMachine', function () {
 	});
 
 	it('cannot send any NFT to vending machine', async function () {
+		if ((await deployments.getNetworkName()) === 'mainnet') {
+			console.log(`skipping test on mainnet...`);
+			return;
+		}
 		const {seller, VendingMachine, linkedData} = await setup();
 		const {tokenID: originalTokenID} = linkedData;
 		const tokenID = originalTokenID + 1;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await expect(
 			seller.NFT['safeTransferFrom(address,address,uint256)'](seller.address, VendingMachine.address, tokenID)
 		).to.be.revertedWith('NotSellingThisNFT');
@@ -153,7 +168,7 @@ describe('VendingMachine', function () {
 		const {users, seller, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(
 			seller.NFT['safeTransferFrom(address,address,uint256)'](seller.address, VendingMachine.address, tokenID)
 		);
@@ -167,7 +182,7 @@ describe('VendingMachine', function () {
 		const {users, buyer, seller, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID, price} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(
 			seller.NFT['safeTransferFrom(address,address,uint256)'](seller.address, VendingMachine.address, tokenID)
 		);
@@ -180,7 +195,7 @@ describe('VendingMachine', function () {
 		const {buyer, seller, linkedData} = await setup();
 		const {tokenID, price} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await expect(buyer.VendingMachine.purchase({value: price})).to.be.reverted;
 	});
 
@@ -188,7 +203,7 @@ describe('VendingMachine', function () {
 		const {users, seller, buyer, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID} = linkedData;
 
-		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await mint(tokenID, seller);
 		await waitFor(
 			seller.NFT['safeTransferFrom(address,address,uint256)'](seller.address, VendingMachine.address, tokenID)
 		);
