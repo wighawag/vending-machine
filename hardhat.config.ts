@@ -24,7 +24,14 @@ const config: HardhatUserConfig = {
 	},
 	namedAccounts: {
 		deployer: 0,
-		simpleERC20Beneficiary: 1,
+		seller: {
+			default: 1,
+			mainnet: '',
+		},
+		buyer: {
+			default: 2,
+			mainnet: '',
+		},
 	},
 	networks: addForkConfiguration({
 		hardhat: {
