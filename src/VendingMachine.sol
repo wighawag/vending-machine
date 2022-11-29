@@ -1,12 +1,10 @@
  // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-
-contract SimpleNFTSale {
+contract VendingMachine {
 
   error NotAuthorized();
   error NotAuthorizedBuyer();
@@ -25,14 +23,6 @@ contract SimpleNFTSale {
     price = price_;
     tokenContract = tokenContract_;
     tokenID = tokenID_;
-  }
-
-  // in case ETH was sent to the contract by mistake
-  function withdrawETH(address payable to) external {
-    if (msg.sender != seller) {
-      revert NotAuthorized();
-    }
-    to.transfer(address(this).balance);
   }
 
   // allow the seller to get the NFT back if sale is not performed

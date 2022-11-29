@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	const tokenContract = NFTDeployment.address;
 	const tokenID = 48;
 
-	await deploy('SimpleNFTSale', {
+	await deploy('VendingMachine', {
 		from: deployer,
 		args: [seller, buyer, price, tokenContract, tokenID],
 		log: true,
@@ -29,5 +29,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	});
 };
 export default func;
-func.tags = ['SimpleNFTSale'];
+func.tags = ['VendingMachine'];
 func.dependencies = ['NFT'];
