@@ -180,6 +180,9 @@ describe('VendingMachine', function () {
 		await expect(seller.VendingMachine.withdrawNFT(NFT.address, tokenID, users[0].address))
 			.to.emit(NFT, 'Transfer')
 			.withArgs(VendingMachine.address, users[0].address, tokenID);
+
+		const newOwner = await NFT.ownerOf(tokenID);
+		expect(newOwner).to.be.equal(users[0].address);
 	});
 
 	it('buyer cannot buy if NFT is withdrawn', async function () {
