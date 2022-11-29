@@ -146,11 +146,11 @@ describe('VendingMachine', function () {
 		await waitFor(seller.NFT.mint(seller.address, tokenID));
 		await expect(
 			seller.NFT['safeTransferFrom(address,address,uint256)'](seller.address, VendingMachine.address, tokenID)
-		).to.be.reverted;
+		).to.be.revertedWith('NotSellingThisNFT');
 	});
 
 	it('seller can withdraw after NFT sent to vending machine', async function () {
-		const {users, seller, buyer, VendingMachine, NFT, linkedData} = await setup();
+		const {users, seller, VendingMachine, NFT, linkedData} = await setup();
 		const {tokenID} = linkedData;
 
 		await waitFor(seller.NFT.mint(seller.address, tokenID));
@@ -161,6 +161,27 @@ describe('VendingMachine', function () {
 		await expect(seller.VendingMachine.withdrawNFT(NFT.address, tokenID, users[0].address))
 			.to.emit(NFT, 'Transfer')
 			.withArgs(VendingMachine.address, users[0].address, tokenID);
+	});
+
+	it('buyer cannot buy if NFT is withdrawn', async function () {
+		const {users, buyer, seller, VendingMachine, NFT, linkedData} = await setup();
+		const {tokenID, price} = linkedData;
+
+		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await waitFor(
+			seller.NFT['safeTransferFrom(address,address,uint256)'](seller.address, VendingMachine.address, tokenID)
+		);
+		await waitFor(seller.VendingMachine.withdrawNFT(NFT.address, tokenID, users[0].address));
+
+		await expect(buyer.VendingMachine.purchase({value: price})).to.be.reverted;
+	});
+
+	it('buyer cannot buy if NFT not sent or approved', async function () {
+		const {buyer, seller, linkedData} = await setup();
+		const {tokenID, price} = linkedData;
+
+		await waitFor(seller.NFT.mint(seller.address, tokenID));
+		await expect(buyer.VendingMachine.purchase({value: price})).to.be.reverted;
 	});
 
 	it('nobody else can withdraw after NFT sent to vending machine', async function () {
@@ -179,5 +200,10 @@ describe('VendingMachine', function () {
 		await expect(users[0].VendingMachine.withdrawNFT(NFT.address, tokenID, users[1].address)).to.be.revertedWith(
 			'NotAuthorized'
 		);
+	});
+
+	it('cannot sent ETH to contract', async function () {
+		const {users, VendingMachine} = await setup();
+		await expect(users[0].signer.sendTransaction({to: VendingMachine.address, value: 1})).to.be.reverted;
 	});
 });
